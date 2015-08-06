@@ -21,7 +21,31 @@ ApplicationWindow {
     height: 600
     title: "Geodatabase Viewer"
 
+    DropArea {
+        id: dropArea
+
+        anchors.fill: parent
+
+        onEntered: {
+            if (!drag.hasUrls) {
+                drag.accepted = false;
+            }
+        }
+
+        onDropped: {
+            if (drop.hasUrls) {
+                // TODO: Validate the dropped file url
+                for (var urlIndex in drop.urls) {
+                    var url = drop.urls[urlIndex];
+                    console.log(url);
+                }
+            }
+        }
+    }
+
     Map {
+        id: focusMap
+
         anchors.fill: parent
 
         wrapAroundEnabled: true
