@@ -15,11 +15,15 @@ import QtQuick 2.1
 import QtQuick.Controls 1.0
 import ArcGIS.Runtime 10.3
 
+import "GeodatabaseViewModel.js" as ViewModels
+
 ApplicationWindow {
     id: appWindow
     width: 800
     height: 600
     title: "Geodatabase Viewer"
+
+    property var viewModel: null
 
     DropArea {
         id: dropArea
@@ -37,7 +41,9 @@ ApplicationWindow {
                 // TODO: Validate the dropped file url
                 for (var urlIndex in drop.urls) {
                     var url = drop.urls[urlIndex];
-                    console.log(url);
+                    if (appWindow.viewModel) {
+                        appWindow.viewModel.addGeodatabase(url);
+                    }
                 }
             }
         }
@@ -52,6 +58,10 @@ ApplicationWindow {
 
         ArcGISTiledMapServiceLayer {
             url: "http://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer"
+        }
+
+        Component.onCompleted: {
+            appWindow.viewModel = new ViewModels.GeodatabaseViewModel();
         }
     }
 }

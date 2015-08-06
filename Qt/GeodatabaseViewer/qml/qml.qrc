@@ -1,6 +1,6 @@
 <RCC>
     <qresource prefix="/qml">
         <file>main.qml</file>
+        <file>GeodatabaseViewModel.js</file>
     </qresource>
 </RCC>
-
