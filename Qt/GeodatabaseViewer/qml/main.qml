@@ -42,7 +42,8 @@ ApplicationWindow {
                 for (var urlIndex in drop.urls) {
                     var url = drop.urls[urlIndex];
                     if (appWindow.viewModel) {
-                        appWindow.viewModel.addGeodatabase(url);
+                        var localFilePath = url.replace(/^(file:\/{3})/,"");
+                        appWindow.viewModel.addGeodatabase(focusMap, localFilePath);
                     }
                 }
             }
