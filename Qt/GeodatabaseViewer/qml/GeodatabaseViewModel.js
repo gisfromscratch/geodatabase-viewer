@@ -10,7 +10,7 @@ GeodatabaseViewModel.prototype.addGeodatabase = function(focusMap, geodatabaseFi
         // Create the local geodatabase instance
         var localGeodatabase = ArcGISRuntime.createObject("Geodatabase");
         console.log("Trying to load geodatabase: " + geodatabaseFileUrl);
-        localGeodatabase.validChanged.connect(localGeodatabase, this.validChanged);
+        localGeodatabase.validChanged.connect(this.validChanged);
         localGeodatabase.path = geodatabaseFileUrl;
 
         // Add a strong reference to it
@@ -19,7 +19,8 @@ GeodatabaseViewModel.prototype.addGeodatabase = function(focusMap, geodatabaseFi
         console.error(ex);
     }
 }
-GeodatabaseViewModel.prototype.validChanged = function (localGeodatabase) {
+GeodatabaseViewModel.prototype.validChanged = function () {
+    var localGeodatabase = GeodatabaseViewModel.geodatabases[0];
     if (!localGeodatabase || !localGeodatabase.valid) {
         console.error("Geodatabase is not a valid geodatabase!");
         return;
