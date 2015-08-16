@@ -48,13 +48,19 @@ ValidChangeHandler.prototype.registerLocalGeodatabase = function (localGeodataba
 }
 
 ValidChangeHandler.prototype.validChanged = function () {
-    var focusMap = GeodatabaseViewModel.datastore[0].map;
+    var datastoreItem = GeodatabaseViewModel.datastore.shift();
+    if (!datastoreItem) {
+        console.error("The datastore item must not be null!");
+        return;
+    }
+
+    var focusMap = datastoreItem.map;
     if (!focusMap) {
         console.error("The map instance must not be null!");
         return;
     }
 
-    var localGeodatabase = GeodatabaseViewModel.datastore[0].geodatabase;
+    var localGeodatabase = datastoreItem.geodatabase;
     if (!localGeodatabase) {
         console.error("The geodatabase instance must no be null!");
         return;
