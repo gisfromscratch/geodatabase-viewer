@@ -5,24 +5,54 @@ function GeodatabaseViewModel() {
     this.geodatabases = {};
 }
 GeodatabaseViewModel.prototype = new Object;
+GeodatabaseViewModel.datastore = [];
 GeodatabaseViewModel.prototype.addGeodatabase = function(focusMap, geodatabaseFileUrl) {
     try {
         // Create the local geodatabase instance
         var localGeodatabase = ArcGISRuntime.createObject("Geodatabase");
         console.log("Trying to load geodatabase: " + geodatabaseFileUrl);
-        localGeodatabase.validChanged.connect(this.validChanged);
-        localGeodatabase.path = geodatabaseFileUrl;
 
         // Add a strong reference to it
         this.geodatabases[geodatabaseFileUrl] = { 'geodatabase': localGeodatabase };
+        GeodatabaseViewModel.datastore.push(localGeodatabase);
+
+        // Set signal handler
+        var changeHandler = new ValidChangeHandler();
+        changeHandler.registerLocalGeodatabase(localGeodatabase);
+        localGeodatabase.path = geodatabaseFileUrl;
     } catch (ex) {
         console.error(ex);
     }
 }
-GeodatabaseViewModel.prototype.validChanged = function () {
-    var localGeodatabase = GeodatabaseViewModel.geodatabases[0];
-    if (!localGeodatabase || !localGeodatabase.valid) {
-        console.error("Geodatabase is not a valid geodatabase!");
+
+
+/**
+ * Handles all validation changes of a geodatabase instance.
+ */
+function ValidChangeHandler() {
+    this.localGeodatabase = {};
+}
+
+ValidChangeHandler.prototype = new Object;
+
+/**
+ * Register a local geodatabase with this handler instance.
+ * @localGeodatabase the local geodatabase which should be registered.
+ */
+ValidChangeHandler.prototype.registerLocalGeodatabase = function (localGeodatabase) {
+    this.localGeodatabase = localGeodatabase;
+    this.localGeodatabase.validChanged.connect(this.validChanged);
+}
+
+ValidChangeHandler.prototype.validChanged = function () {
+    var localGeodatabase = GeodatabaseViewModel.datastore[0];
+    if (!localGeodatabase) {
+        console.error("The geodatabase instance must no be null!");
+        return;
+    }
+
+    if (!localGeodatabase.valid) {
+        console.error("Geodatabase " + localGeodatabase.path + " is not a valid geodatabase!");
         return;
     }
 
@@ -46,3 +76,4 @@ GeodatabaseViewModel.prototype.validChanged = function () {
         console.warn(geodatabaseFileUrl + " has no feature tables!");
     }
 }
+
