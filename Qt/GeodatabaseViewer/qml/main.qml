@@ -71,5 +71,9 @@ ApplicationWindow {
     Component.onCompleted: {
         appWindow.viewModel = new ViewModels.GeodatabaseViewModel();
     }
+
+    onClosing: {
+        appWindow.viewModel.destroy();
+    }
 }
 

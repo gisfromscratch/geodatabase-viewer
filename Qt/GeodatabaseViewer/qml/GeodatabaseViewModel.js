@@ -6,6 +6,12 @@ function GeodatabaseViewModel() {
 }
 GeodatabaseViewModel.prototype = new Object;
 GeodatabaseViewModel.datastore = [];
+
+/**
+ * Adds a new geodatabse to this view model instance.
+ * @param focusMap the map component which should be used for displaying the geodatabase content.
+ * @param geodatabaseFileUrl the file URL to the local geodatabase.
+ */
 GeodatabaseViewModel.prototype.addGeodatabase = function(focusMap, geodatabaseFileUrl) {
     try {
         // Create the local geodatabase instance
@@ -13,16 +19,43 @@ GeodatabaseViewModel.prototype.addGeodatabase = function(focusMap, geodatabaseFi
         console.log("Trying to load geodatabase: " + geodatabaseFileUrl);
 
         // Add a strong reference to it
-        this.geodatabases[geodatabaseFileUrl] = { 'geodatabase': localGeodatabase };
+        var geodatabaseItem = { map: focusMap, geodatabase: localGeodatabase };
+        this.geodatabases[geodatabaseFileUrl] = geodatabaseItem;
 
         // We are not able to access this instance from the event handler
         // so we have to use a static property as a workaround!
-        GeodatabaseViewModel.datastore.push({ map: focusMap, geodatabase: localGeodatabase });
+        GeodatabaseViewModel.datastore.push(geodatabaseItem);
 
         // Set signal handler
         var changeHandler = new ValidChangeHandler();
         changeHandler.registerLocalGeodatabase(localGeodatabase);
         localGeodatabase.path = geodatabaseFileUrl;
+    } catch (ex) {
+        console.error(ex);
+    }
+}
+
+/**
+ * Releases resources for all registered map components and geodatabases.
+ */
+GeodatabaseViewModel.prototype.destroy = function() {
+    try {
+        for (var index in this.geodatabases) {
+            var geodatabaseItem = this.geodatabases[index];
+            var focusMap = geodatabaseItem.map;
+            if (focusMap) {
+                // We need to destroy this dynamically created instance
+                focusMap.destroy();
+                if (geodatabaseItem.geodatabase) {
+                    console.debug("Map displaying '" + geodatabaseItem.geodatabase.path + "' was destroyed.");
+                }
+
+                delete this.geodatabases[index];
+            } else {
+                console.error("The registered map must not be null!");
+            }
+        }
+        this.geodatabases = {};
     } catch (ex) {
         console.error(ex);
     }
