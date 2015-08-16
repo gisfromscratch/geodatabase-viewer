@@ -2,9 +2,27 @@
  * View Model managing the loaded local geodatabases.
  */
 function GeodatabaseViewModel() {
+    if (!GeodatabaseViewModel.instance) {
+        GeodatabaseViewModel.instance = this;
+    }
     this.geodatabases = {};
 }
 GeodatabaseViewModel.prototype = new Object;
+
+/**
+ * Using singleton pattern to workaround the context free signal handler.
+ * We are not able to access this instance from the event handler,
+ * so we have to use a static property as a workaround!
+ */
+GeodatabaseViewModel.instance = null;
+
+/**
+ * Ensures that only one instance of the handler is obtained.
+ * @return the singleton instance of the handler.
+ */
+GeodatabaseViewModel.getInstance = function() {
+    return GeodatabaseViewModel.instance;
+}
 
 /**
  * Adds a new geodatabse to this view model instance.
@@ -37,17 +55,8 @@ GeodatabaseViewModel.prototype.destroy = function() {
     try {
         for (var index in this.geodatabases) {
             var geodatabaseItem = this.geodatabases[index];
-            var focusMap = geodatabaseItem.map;
-            if (focusMap) {
-                // We need to destroy this dynamically created instance
-                focusMap.destroy();
-                if (geodatabaseItem.geodatabase) {
-                    console.debug("Map displaying '" + geodatabaseItem.geodatabase.path + "' was destroyed.");
-                }
-
+            if (this.destroyItem(geodatabaseItem)) {
                 delete this.geodatabases[index];
-            } else {
-                console.error("The registered map must not be null!");
             }
         }
         this.geodatabases = {};
@@ -55,6 +64,40 @@ GeodatabaseViewModel.prototype.destroy = function() {
         console.error(ex);
     }
 }
+
+/**
+ * Releases the resources for the specified geodatabase item.
+ * @param geodatabaseItem the item which should be destroyed.
+ * @return true if this item was destroyed.
+ */
+GeodatabaseViewModel.prototype.destroyItem = function(geodatabaseItem) {
+    var focusMap = geodatabaseItem.map;
+    if (focusMap) {
+        // We need to destroy this dynamically created instance
+        focusMap.destroy();
+        if (geodatabaseItem.geodatabase) {
+            console.debug("Map displaying '" + geodatabaseItem.geodatabase.path + "' was destroyed.");
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * Gets the index of the specified geodatabase item.
+ * @geodatabaseItem the item which should be found.
+ * @return the index of the specified item or -1 if no item was found.
+ */
+GeodatabaseViewModel.prototype.indexOfItem = function(geodatabaseItem) {
+    for (var index in this.geodatabases) {
+        if (geodatabaseItem === this.geodatabases[index]) {
+            return index;
+        }
+    }
+    return -1;
+}
+
 
 
 /**
@@ -98,6 +141,9 @@ ValidChangeHandler.prototype.registerLocalGeodatabase = function (geodatabaseIte
     this.geodatabaseItem.geodatabase.validChanged.connect(this.validChanged);
 }
 
+/**
+ * The valid state of any registered local geodatabase has changed.
+ */
 ValidChangeHandler.prototype.validChanged = function () {
     var geodatabaseItem = ValidChangeHandler.getInstance().geodatabaseItem;
     if (!geodatabaseItem) {
@@ -119,10 +165,26 @@ ValidChangeHandler.prototype.validChanged = function () {
 
     if (!localGeodatabase.valid) {
         console.error("Geodatabase " + localGeodatabase.path + " is not a valid geodatabase!");
+
+        // Trying to destroy the already added map component.
         try {
-
+            var viewModel = GeodatabaseViewModel.getInstance();
+            if (viewModel) {
+                var itemIndex = viewModel.indexOfItem(geodatabaseItem);
+                if (-1 !== itemIndex) {
+                    // We need to destroy this dynamically created instance
+                    if (viewModel.destroyItem(geodatabaseItem)) {
+                        // TODO: Do not access a private variable!
+                        delete viewModel.geodatabases[itemIndex];
+                    } else {
+                        console.warn("The geodatabase item could not be destroyed!");
+                    }
+                } else {
+                    console.warn("The geodatabase item could not be destroyed!");
+                }
+            }
         } catch (ex) {
-
+            console.error(ex);
         }
         return;
     }
@@ -140,7 +202,6 @@ ValidChangeHandler.prototype.validChanged = function () {
         localFeatureLayer.featureTable = localFeatureTable;
 
         console.log("Feature table bound");
-
 
         focusMap.insertLayer(localFeatureLayer, 0);
         console.log("Feature layer added");
