@@ -14,7 +14,10 @@ GeodatabaseViewModel.prototype.addGeodatabase = function(focusMap, geodatabaseFi
 
         // Add a strong reference to it
         this.geodatabases[geodatabaseFileUrl] = { 'geodatabase': localGeodatabase };
-        GeodatabaseViewModel.datastore.push(localGeodatabase);
+
+        // We are not able to access this instance from the event handler
+        // so we have to use a static property as a workaround!
+        GeodatabaseViewModel.datastore.push({ map: focusMap, geodatabase: localGeodatabase });
 
         // Set signal handler
         var changeHandler = new ValidChangeHandler();
@@ -45,7 +48,13 @@ ValidChangeHandler.prototype.registerLocalGeodatabase = function (localGeodataba
 }
 
 ValidChangeHandler.prototype.validChanged = function () {
-    var localGeodatabase = GeodatabaseViewModel.datastore[0];
+    var focusMap = GeodatabaseViewModel.datastore[0].map;
+    if (!focusMap) {
+        console.error("The map instance must not be null!");
+        return;
+    }
+
+    var localGeodatabase = GeodatabaseViewModel.datastore[0].geodatabase;
     if (!localGeodatabase) {
         console.error("The geodatabase instance must no be null!");
         return;
@@ -69,11 +78,13 @@ ValidChangeHandler.prototype.validChanged = function () {
         localFeatureLayer.featureTable = localFeatureTable;
 
         console.log("Feature table bound");
+
+
         focusMap.insertLayer(localFeatureLayer, 0);
         console.log("Feature layer added");
     }
     if (featureTables.length < 1) {
-        console.warn(geodatabaseFileUrl + " has no feature tables!");
+        console.warn(localGeodatabase.path + " has no feature tables!");
     }
 }
 

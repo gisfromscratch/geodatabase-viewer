@@ -42,28 +42,34 @@ ApplicationWindow {
                 for (var urlIndex in drop.urls) {
                     var url = drop.urls[urlIndex];
                     if (appWindow.viewModel) {
-                        var localFilePath = url.replace(/^(file:\/{3})/,"");
-                        appWindow.viewModel.addGeodatabase(focusMap, localFilePath);
+                        // Create a new map
+                        var mapViewFactory = Qt.createComponent("mapview.qml");
+                        var addDataCallback = function() {
+                            var localFilePath = url.replace(/^(file:\/{3})/,"");
+                            var focusMap = mapViewFactory.createObject(appWindow);
+                            appWindow.viewModel.addGeodatabase(focusMap, localFilePath);
+                        };
+
+                        if (Component.Ready === mapViewFactory.status) {
+                            addDataCallback();
+                        } else {
+                            mapViewFactory.statusChanged.connect(function () {
+                                if (Component.Ready === mapViewFactory.status) {
+                                    addDataCallback();
+                                } else {
+                                    console.error(mapViewFactory.errorString());
+                                }
+                            });
+                        }
+
                     }
                 }
             }
         }
     }
 
-    Map {
-        id: focusMap
-
-        anchors.fill: parent
-
-        wrapAroundEnabled: true
-
-        ArcGISTiledMapServiceLayer {
-            url: "http://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer"
-        }
-
-        Component.onCompleted: {
-            appWindow.viewModel = new ViewModels.GeodatabaseViewModel();
-        }
+    Component.onCompleted: {
+        appWindow.viewModel = new ViewModels.GeodatabaseViewModel();
     }
 }
 
