@@ -5,7 +5,6 @@ function GeodatabaseViewModel() {
     this.geodatabases = {};
 }
 GeodatabaseViewModel.prototype = new Object;
-GeodatabaseViewModel.datastore = [];
 
 /**
  * Adds a new geodatabse to this view model instance.
@@ -22,13 +21,9 @@ GeodatabaseViewModel.prototype.addGeodatabase = function(focusMap, geodatabaseFi
         var geodatabaseItem = { map: focusMap, geodatabase: localGeodatabase };
         this.geodatabases[geodatabaseFileUrl] = geodatabaseItem;
 
-        // We are not able to access this instance from the event handler
-        // so we have to use a static property as a workaround!
-        GeodatabaseViewModel.datastore.push(geodatabaseItem);
-
         // Set signal handler
-        var changeHandler = new ValidChangeHandler();
-        changeHandler.registerLocalGeodatabase(localGeodatabase);
+        var changeHandler = ValidChangeHandler.getInstance();
+        changeHandler.registerLocalGeodatabase(geodatabaseItem);
         localGeodatabase.path = geodatabaseFileUrl;
     } catch (ex) {
         console.error(ex);
@@ -66,34 +61,57 @@ GeodatabaseViewModel.prototype.destroy = function() {
  * Handles all validation changes of a geodatabase instance.
  */
 function ValidChangeHandler() {
-    this.localGeodatabase = {};
+    this.geodatabaseItem = {};
 }
 
 ValidChangeHandler.prototype = new Object;
 
 /**
- * Register a local geodatabase with this handler instance.
- * @localGeodatabase the local geodatabase which should be registered.
+ * Using singleton pattern to workaround the context free signal handler.
+ * We are not able to access this instance from the event handler,
+ * so we have to use a static property as a workaround!
  */
-ValidChangeHandler.prototype.registerLocalGeodatabase = function (localGeodatabase) {
-    this.localGeodatabase = localGeodatabase;
-    this.localGeodatabase.validChanged.connect(this.validChanged);
+ValidChangeHandler.instance = null;
+
+/**
+ * Ensures that only one instance of the handler is obtained.
+ * @return the singleton instance of the handler.
+ */
+ValidChangeHandler.getInstance = function() {
+    if (!ValidChangeHandler.instance) {
+        ValidChangeHandler.instance = new ValidChangeHandler();
+    }
+    return ValidChangeHandler.instance;
 }
 
-ValidChangeHandler.prototype.validChanged = function () {
-    var datastoreItem = GeodatabaseViewModel.datastore.shift();
-    if (!datastoreItem) {
-        console.error("The datastore item must not be null!");
+/**
+ * Register a local geodatabase with this handler instance.
+ * @geodatabaseItem the geodatabase item which should be registered.
+ */
+ValidChangeHandler.prototype.registerLocalGeodatabase = function (geodatabaseItem) {
+    if (!geodatabaseItem.geodatabase) {
+        console.error("The geodatabase must not be null!");
         return;
     }
 
-    var focusMap = datastoreItem.map;
+    this.geodatabaseItem = geodatabaseItem;
+    this.geodatabaseItem.geodatabase.validChanged.connect(this.validChanged);
+}
+
+ValidChangeHandler.prototype.validChanged = function () {
+    var geodatabaseItem = ValidChangeHandler.getInstance().geodatabaseItem;
+    if (!geodatabaseItem) {
+        console.error("The geodatabase item must not be null!");
+        return;
+    }
+
+    var focusMap = geodatabaseItem.map;
     if (!focusMap) {
         console.error("The map instance must not be null!");
         return;
     }
 
-    var localGeodatabase = datastoreItem.geodatabase;
+    var localGeodatabase = geodatabaseItem.geodatabase;
     if (!localGeodatabase) {
         console.error("The geodatabase instance must no be null!");
         return;
@@ -101,6 +119,11 @@ ValidChangeHandler.prototype.validChanged = function () {
 
     if (!localGeodatabase.valid) {
         console.error("Geodatabase " + localGeodatabase.path + " is not a valid geodatabase!");
+        try {
+
+        } catch (ex) {
+
+        }
         return;
     }
 
