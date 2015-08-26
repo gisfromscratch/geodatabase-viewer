@@ -11,9 +11,9 @@
 // See the Sample code usage restrictions document for further information.
 //
 
-import QtQuick 2.1
+import QtQuick 2.3
 import QtQuick.Controls 1.0
-import ArcGIS.Runtime 10.3
+import ArcGIS.Runtime 10.26
 
 import "GeodatabaseViewModel.js" as ViewModels
 
@@ -41,6 +41,7 @@ ApplicationWindow {
                 // TODO: Validate the dropped file url
                 for (var urlIndex in drop.urls) {
                     var url = drop.urls[urlIndex];
+
                     if (appWindow.viewModel) {
                         // Create a new map
                         var mapViewFactory = Qt.createComponent("mapview.qml");
@@ -64,6 +65,8 @@ ApplicationWindow {
 
                     }
                 }
+            } else {
+                console.error("No URLs in dropped element!");
             }
         }
     }

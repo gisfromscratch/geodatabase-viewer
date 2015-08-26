@@ -59,6 +59,13 @@ int main(int argc, char *argv[])
 #endif
     QSettings::setDefaultFormat(kSettingsFormat);
 
+    // THIS MUST BE DONE FOR THE 10.2.6 RELEASE
+    // Otherwise a Runtime assertion is raised when using the map!
+#ifdef Q_OS_WIN
+    // Force usage of OpenGL ES through ANGLE on Windows
+    QCoreApplication::setAttribute(Qt::AA_UseOpenGLES);
+#endif
+
     // Initialize license
 
 #ifdef kClientId
