@@ -13,6 +13,7 @@
 
 import QtQuick 2.3
 import QtQuick.Controls 1.0
+import QtQuick.Layouts 1.1
 import ArcGIS.Runtime 10.26
 
 import "GeodatabaseViewModel.js" as ViewModels
@@ -24,6 +25,23 @@ ApplicationWindow {
     title: "Geodatabase Viewer"
 
     property var viewModel: null
+
+    ColumnLayout {
+        MapGallery {
+            id: mapGallery
+            Layout.alignment: Qt.AlignTop
+            Layout.fillWidth: true
+            Layout.preferredWidth: appWindow.width
+            Layout.preferredHeight: 80
+        }
+
+        Rectangle {
+            id: mapArea
+            Layout.alignment: Qt.AlignBottom
+            Layout.preferredWidth: appWindow.width
+            Layout.preferredHeight: appWindow.height - mapGallery.height
+        }
+    }
 
     DropArea {
         id: dropArea
@@ -44,11 +62,14 @@ ApplicationWindow {
 
                     if (appWindow.viewModel) {
                         // Create a new map
-                        var mapViewFactory = Qt.createComponent("mapview.qml");
+                        var mapViewFactory = Qt.createComponent("MapView.qml");
                         var addDataCallback = function() {
                             var localFilePath = url.replace(/^(file:\/{3})/,"");
-                            var focusMap = mapViewFactory.createObject(appWindow);
+                            var focusMap = mapViewFactory.createObject(mapArea);
                             appWindow.viewModel.addGeodatabase(focusMap, localFilePath);
+
+                            // Create a map gallery item
+                            mapGallery.addGeodatabaseItem(localFilePath);
                         };
 
                         if (Component.Ready === mapViewFactory.status) {

@@ -2,6 +2,7 @@
     <qresource prefix="/qml">
         <file>main.qml</file>
         <file>GeodatabaseViewModel.js</file>
-        <file>mapview.qml</file>
+        <file>MapGallery.qml</file>
+        <file>MapView.qml</file>
     </qresource>
 </RCC>
